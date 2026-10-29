@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>AI 底层知识 · 可朗读版</title>
+<style>
+:root{--bg:#fbfbf9;--fg:#1c1c1c;--muted:#6b7280;--accent:#2f7d63;--card:#f2f5f3;--line:#dfe5e1}
+@media (prefers-color-scheme:dark){:root{--bg:#16181a;--fg:#e6e6e3;--muted:#9aa3ab;--accent:#5ec9a4;--card:#1f2426;--line:#2c3336}}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--fg)}
+body{font-family:-apple-system,"PingFang SC","Noto Sans CJK SC","Microsoft YaHei",sans-serif;
+ line-height:1.9;font-size:17px;-webkit-text-size-adjust:100%}
+header{position:sticky;top:0;z-index:10;background:var(--bg);border-bottom:1px solid var(--line);
+ padding:10px 14px;backdrop-filter:blur(8px)}
+.bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.title{font-weight:600;font-size:15px;margin-right:auto;color:var(--accent)}
+button,select{font:inherit;font-size:14px;padding:7px 12px;border-radius:9px;border:1px solid var(--line);
+ background:var(--card);color:var(--fg);cursor:pointer}
+button:active{transform:scale(.97)}
+button.play{background:var(--accent);color:#fff;border-color:transparent;min-width:74px;font-weight:600}
+.meta{font-size:12px;color:var(--muted);margin-top:6px;display:flex;gap:10px;align-items:center}
+main{max-width:720px;margin:0 auto;padding:18px 18px 120px}
+section{display:none}
+section.on{display:block}
+h1{font-size:1.45em;line-height:1.45;margin:1.2em 0 .7em}
+h2{font-size:1.18em;margin:1.7em 0 .6em;padding-left:.55em;border-left:3px solid var(--accent)}
+h3{font-size:1.05em;margin:1.2em 0 .5em}
+p{margin:0 0 .95em}
+blockquote{margin:1em 0;padding:.6em .9em;background:var(--card);border-left:3px solid var(--accent);
+ border-radius:0 6px 6px 0;font-size:.95em}
+ul,ol{margin:0 0 1em;padding-left:1.35em}
+li{margin:.3em 0}
+code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.88em;background:var(--card);
+ padding:.12em .32em;border-radius:4px}
+pre{background:var(--card);padding:.9em;border-radius:8px;overflow-x:auto;font-size:.85em;line-height:1.55}
+pre code{background:none;padding:0}
+table{border-collapse:collapse;width:100%;margin:1em 0;font-size:.86em;display:block;overflow-x:auto}
+th,td{border:1px solid var(--line);padding:.45em .6em;text-align:left;white-space:nowrap}
+th{background:var(--card)}
+a{color:var(--accent)}
+hr{border:none;border-top:1px solid var(--line);margin:1.6em 0}
+.speaking{background:linear-gradient(transparent 62%,rgba(94,201,164,.28) 62%);border-radius:3px}
+.toc{display:none;padding:8px 14px 18px;border-bottom:1px solid var(--line);background:var(--bg)}
+.toc.on{display:block}
+.toc a{display:block;padding:9px 4px;border-bottom:1px solid var(--line);text-decoration:none;font-size:15px}
+.fab{position:fixed;right:16px;bottom:20px;z-index:20;border-radius:50%;width:56px;height:56px;
+ font-size:22px;box-shadow:0 4px 14px rgba(0,0,0,.18);background:var(--accent);color:#fff;border:none}
+</style>
+</head>
+<body>
+<header>
+  <div class="bar">
+    <span class="title">AI 底层知识</span>
+    <button id="tocbtn">目录</button>
+    <button id="prev">上一章</button>
+    <button id="next">下一章</button>
+  </div>
+  <div class="bar" style="margin-top:8px">
+    <button id="play" class="play">朗读</button>
+    <select id="rate">
+      <option value="0.8">0.8×</option>
+      <option value="1" selected>1.0×</option>
+      <option value="1.2">1.2×</option>
+      <option value="1.5">1.5×</option>
+      <option value="2">2.0×</option>
+    </select>
+    <span class="meta" id="meta"></span>
+  </div>
+</header>
+<nav class="toc" id="toc"></nav>
+<main>
+<section id="ch1" data-title="索引"><h1>1. 索引</h1>
+<blockquote>目标不是"会用工具"，而是<strong>能自己解释一遍</strong>：一句话进去，为什么能出来一句话。</blockquote>
+<h3>一句话</h3>
+<p>大模型 = 一个被训练到极准的<strong>下一个词概率预测器</strong>；所谓"智能"，是在海量文本上把这个预测做到极致后冒出来的副产品。</p>
+<h3>六个阶段（按依赖顺序，别跳）</h3>
+<table><thead><tr>
+<th>阶段</th>
+<th>笔记</th>
+<th>学完你能回答</th>
+</tr></thead><tbody>
+<tr>
+<td>1</td>
+<td>&lt;a href="#ch2"&gt;01-数学直觉&lt;/a&gt;</td>
+<td>梯度、交叉熵到底是什么，为什么训练就是"下山"</td>
+</tr>
+<tr>
+<td>2</td>
+<td>&lt;a href="#ch3"&gt;02-神经网络与训练&lt;/a&gt;</td>
+<td>一层网络怎么算，反向传播在传什么</td>
+</tr>
+<tr>
+<td>3</td>
+<td>&lt;a href="#ch4"&gt;03-Transformer&lt;/a&gt;</td>
+<td>注意力为什么能替代循环，Q/K/V 各干什么</td>
+</tr>
+<tr>
+<td>4</td>
+<td>&lt;a href="#ch5"&gt;04-大模型训练三阶段&lt;/a&gt;</td>
+<td>预训练/SFT/对齐各解决什么问题，幻觉从哪来</td>
+</tr>
+<tr>
+<td>5</td>
+<td>&lt;a href="#ch6"&gt;05-推理与部署&lt;/a&gt;</td>
+<td>temperature 在改什么，为什么长上下文那么吃显存</td>
+</tr>
+<tr>
+<td>6</td>
+<td>&lt;a href="#ch7"&gt;06-应用层-RAG与Agent&lt;/a&gt;</td>
+<td>RAG 和 Agent 的边界在哪，什么时候不该用</td>
+</tr>
+</tbody></table>
+<p>配套：&lt;a href="#ch8"&gt;8 周路线图（不写代码版）&lt;/a&gt;（每天 30–45 分钟） · &lt;a href="#ch9"&gt;08-资源清单&lt;/a&gt;（挑着看，别全看）</p>
+<blockquote><strong>本套材料按「零编程基础」写的</strong>：全程不写代码，靠图解、类比、手算和网页工具。需要编程的部分单独标出，放在以后。</blockquote>
+<h3>三条学习原则</h3>
+<ul>
+<li>1. <strong>先直觉，后公式</strong>：每个概念先用生活类比讲通，再回去碰数学。顺序反了会卡死。</li>
+<li>2. <strong>能画出来才算懂</strong>：注意力、反向传播、KV cache，都要能徒手画草图。</li>
+<li>3. <strong>动手一次胜过读十遍</strong>：用可视化工具亲手改一次输入，比看十个视频有用。</li>
+</ul>
+<h3>最短路径（时间紧就看这个）</h3>
+<p>如果只有两周：<code>01</code> 只看梯度和交叉熵 → <code>03</code> 完整读 → <code>06</code> 完整读 → 跳过 02/04/05 的公式部分。</p>
+<p>如果目标是"以后自己动手做"：先按 8 周走完，再补 Python（见 &lt;a href="#ch8"&gt;07-8周路线图&lt;/a&gt; 的可选支线）。别一上来就学编程，两条线同时卡很容易放弃。</p>
+<h3>自测：学完的标准</h3>
+<ul>
+<li>[ ] 能向一个不懂技术的朋友解释"注意力机制"，不用"注意力"三个字</li>
+<li>[ ] 能说清为什么模型会产生幻觉，以及 RAG 为什么能缓解</li>
+<li>[ ] 能手算一次 7B 模型推理需要多少显存</li>
+<li>[ ] 能说出 temperature=0 和 temperature=1 的行为差异</li>
+</ul>
+<h3>学习进度</h3>
+<ul>
+<li>[ ] 阶段 1 数学直觉</li>
+<li>[ ] 阶段 2 神经网络</li>
+<li>[ ] 阶段 3 Transformer</li>
+<li>[ ] 阶段 4 训练三阶段</li>
+<li>[ ] 阶段 5 推理部署</li>
+<li>[ ] 阶段 6 应用层</li>
+<li>[ ] 自测四项全过</li>
+</ul>
+<hr/>
+<p>&lt;span class="wiki"&gt;&amp;lt; 返回学习索引&lt;/span&gt;</p>
+</section>
+<section id="ch2" data-title="数学直觉"><h1>2. 数学直觉</h1>
+<blockquote>只学四样东西：向量、梯度、概率、交叉熵。其余都可以现查。</blockquote>
+<h3>1. 向量和矩阵：一批数字一起动</h3>
+<p>一个词用 4096 个数字表示，叫<strong>向量</strong>。一层网络做的事，就是把这个向量乘一个矩阵、再加个偏置。</p>
+<p><strong>类比</strong>：调音台上的推子。矩阵就是"每个推子对每个输出的影响权重"，一次把所有输入混成新的输出。</p>
+<p>关键点：</p>
+<ul>
+<li>矩阵乘法的本质是<strong>批量做加权求和</strong></li>
+<li>维度变化 = 信息被压缩或展开（比如 4096 维压到 32000 维的词表打分）</li>
+</ul>
+<h3>2. 梯度：往哪个方向调，损失降得最快</h3>
+<p>损失函数告诉你"现在错得多离谱"，梯度告诉你"每个参数往哪边挪一点能让损失变小"。</p>
+<p><strong>类比</strong>：蒙着眼下山。你摸脚下哪边更斜（梯度），就往那边迈一小步（学习率）。步子太大容易滚下山崖（发散），太小走到天黑（收敛慢）。</p>
+<ul>
+<li><strong>学习率</strong>：步长。最常调、最容易调坏的超参</li>
+<li><strong>局部最优</strong>：山谷里的小坑，不是最低点，但通常够用</li>
+<li><strong>随机梯度下降（SGD）</strong>：每次只用一小批数据估梯度，快且带噪声，噪声反而有助于跳出小坑</li>
+</ul>
+<h3>3. 概率：模型输出的是分布，不是答案</h3>
+<p>模型最后一步是 <strong>softmax</strong>：把一堆任意实数压成"加起来等于 1 的概率"。</p>
+<p><code>p_i = \frac{e^{z_i}}{\sum_j e^{z_j}}</code></p>
+<ul>
+<li>分数高的被放大，低的被压扁</li>
+<li>温度参数就是在 softmax 前把 $z$ 除以 $T$：$T$ 大 → 分布平 → 更随机</li>
+</ul>
+<h3>4. 交叉熵：衡量"预测的分布"和"真实答案"差多远</h3>
+<p>如果真实下一个词是"猫"，模型给它 0.9 的概率，交叉熵就小；给 0.01，交叉熵就大。</p>
+<p><code>H = -\sum_i y_i \log p_i</code></p>
+<p>因为真实标签是 one-hot，实际只算一项：$-\log p_{\text{正确词}}$。</p>
+<ul>
+<li>交叉熵 = 训练时的损失函数</li>
+<li><strong>困惑度（perplexity）= $e^{H}$</strong>，可以理解为"模型在多少个词里犹豫"。困惑度 10 ≈ 平均在 10 个候选里猜</li>
+</ul>
+<h3>一句话总结</h3>
+<p>训练的数学本质：<strong>用梯度把交叉熵压下去</strong>。所有花哨架构，都是为了让这个压的过程更有效。</p>
+<h3>自测</h3>
+<ul>
+<li>1. 为什么学习率太大模型会"炸"？</li>
+<li>2. 交叉熵损失为 0 意味着什么？现实中可能吗？</li>
+<li>3. softmax 里为什么要取指数，不直接归一化？</li>
+</ul>
+<h3>相关</h3>
+<ul>
+<li>下一站：&lt;a href="#ch3"&gt;02-神经网络与训练&lt;/a&gt;</li>
+<li>返回：&lt;a href="#ch1"&gt;00-索引&lt;/a&gt;</li>
+</ul>
+<hr/>
+<p>&lt;span class="wiki"&gt;&amp;lt; 返回学习索引&lt;/span&gt;</p>
+</section>
+<section id="ch3" data-title="神经网络与训练"><h1>3. 神经网络与训练</h1>
+<h3>1. 一个神经元在干什么</h3>
+<p>三件事：<strong>加权求和 → 加偏置 → 过非线性函数</strong>。</p>
+<p><code>y = f(w_1x_1 + w_2x_2 + \dots + b)</code></p>
+<p><code>f</code> 是激活函数（ReLU、GELU）。没有它，一百层叠起来也等价于一层线性变换——这就是"深度"失效的原因。</p>
+<p><strong>类比</strong>：每个神经元是一个"带阈值的投票员"。权重是他对每个议题的在意程度，偏置是他的立场底线，激活函数决定"票数过线才举手"。</p>
+<h3>2. 从一层到多层：表征在逐层抽象</h3>
+<ul>
+<li>浅层学到边缘、字符、局部搭配</li>
+<li>中层学到词组、句法结构</li>
+<li>深层学到语义、意图</li>
+</ul>
+<p>这是<strong>涌现</strong>的物理基础：不是谁设计了"语义层"，是优化逼出来的。</p>
+<h3>3. 参数量是怎么来的</h3>
+<p>一个 <code>4096 × 4096</code> 的矩阵就有 1677 万个参数。一个 7B 模型，就是七十几层这样的矩阵堆起来。</p>
+<p>参数量 ≈ 模型"记忆容量"的上限，但不等于能力——数据质量和训练方法同样关键。</p>
+<h3>4. 反向传播：把"错多少"按责任分摊回去</h3>
+<p>前向：输入 → 一层层算 → 输出 → 和答案比 → 得到损失。</p>
+<p>反向：从损失出发，用<strong>链式法则</strong>一层层往回算"每个参数对这个错负多少责任"，然后按责任大小调整。</p>
+<p><strong>类比</strong>：工厂出了次品，从成品往回追责，每道工序领到自己那份责任，各自改进。追责的依据是"你这一环变动一点，最终误差变多少"——这就是偏导。</p>
+<h3>5. 训练的基本循环</h3>
+<pre>
+取一批数据 → 前向算损失 → 反向算梯度 → 更新参数 → 重复
+</pre>
+<table><thead><tr>
+<th>名词</th>
+<th>含义</th>
+<th>常见坑</th>
+</tr></thead><tbody>
+<tr>
+<td>batch size</td>
+<td>一次看多少条</td>
+<td>太小噪声大，太大显存爆</td>
+</tr>
+<tr>
+<td>epoch</td>
+<td>把数据过几遍</td>
+<td>大模型通常只过不到一遍</td>
+</tr>
+<tr>
+<td>优化器</td>
+<td>怎么用梯度更新</td>
+<td>从 SGD 到 Adam，Adam 自适应步长更好用</td>
+</tr>
+<tr>
+<td>正则化</td>
+<td>防死记硬背</td>
+<td>dropout、权重衰减、早停</td>
+</tr>
+</tbody></table>
+<h3>6. 过拟合：背答案 vs 会做题</h3>
+<ul>
+<li><strong>欠拟合</strong>：训练集都做不对 → 模型太小或训不够</li>
+<li><strong>过拟合</strong>：训练集全对，新题全错 → 死记硬背</li>
+<li>判断方法：看验证集表现，别只看训练损失</li>
+</ul>
+<p>大模型时代这个词有点失效：模型大到一定程度，过拟合反而减少（双下降现象），但<strong>数据重复</strong>依然会导致记忆和泄露。</p>
+<h3>一句话总结</h3>
+<p>神经网络 = 一堆可调的加权求和 + 一个把误差分摊回去的机制。深度学习的一切复杂性，都长在这两句话上。</p>
+<h3>自测</h3>
+<ul>
+<li>1. 去掉所有激活函数，深层网络会退化成什么？</li>
+<li>2. 反向传播为什么要用链式法则，不能每层单独算吗？</li>
+<li>3. 训练损失一直降、验证损失开始升，说明什么？</li>
+</ul>
+<h3>相关</h3>
+<ul>
+<li>上一站：&lt;a href="#ch2"&gt;01-数学直觉&lt;/a&gt;</li>
+<li>下一站：&lt;a href="#ch4"&gt;03-Transformer&lt;/a&gt;</li>
+</ul>
+<hr/>
+<p>&lt;span class="wiki"&gt;&amp;lt; 返回学习索引&lt;/span&gt;</p>
+</section>
+<section id="ch4" data-title="Transformer"><h1>4. Transformer</h1>
+<blockquote>这是整个现代 AI 的地基。其余都可以跳过，这一篇不行。</blockquote>
+<h3>1. 文字怎么变成数字</h3>
+<pre>
+"我今天很累" → [token id: 8231, 442, 91, 3377] → 每个 id 查表得到一个向量
+</pre>
+<ul>
+<li><strong>分词器（tokenizer）</strong>：按子词切，常见词一个 token，生僻词拆几块。中文一个字大约 1–2 个 token</li>
+<li><strong>词嵌入（embedding）</strong>：一张巨大的查找表，把 id 映射成 4096 维向量。这张表也在训练中一起调</li>
+</ul>
+<h3>2. 注意力的核心：让每个词去"查资料"</h3>
+<p><strong>最关键的类比</strong>：一次会议。</p>
+<ul>
+<li>你（当前词）有个<strong>问题</strong>（Query）</li>
+<li>每个与会者有个<strong>名牌</strong>（Key）和<strong>掌握的内容</strong>（Value）</li>
+<li>你拿问题和每张名牌比对，谁匹配度高，就多听谁的内容</li>
+<li>最后你带着"加权汇总后的信息"回去</li>
+</ul>
+<p>数学上就是：</p>
+<p><code>\text{Attention}(Q,K,V) = \text{softmax}\left(\frac{QK^T}{\sqrt{d}}\right)V</code></p>
+<ul>
+<li>$QK^T$：问和答的匹配分数</li>
+<li>$\sqrt{d}$：防止维度高时分数过大、softmax 饱和</li>
+<li>softmax：归一化成"听谁的权重"</li>
+<li>乘 $V$：按权重把内容取回来</li>
+</ul>
+<p><strong>为什么要这三套权重</strong>：同一个词，作为"提问者"和"被查询者"的角色不同，所以用三个不同的矩阵从同一个向量投影出 Q、K、V。</p>
+<h3>3. 多头：同时开几场小会</h3>
+<p>把 4096 维切成 32 份，每份 128 维，各自做一次注意力，再拼回来。</p>
+<p>好处：有的头盯语法（主谓关系），有的头盯指代（"他"指谁），有的头盯位置邻近。分工不是人为规定的，是训练出来的。</p>
+<h3>4. 位置编码：注意力本身没有顺序感</h3>
+<p>注意力是"全体两两比对"，天生不知道谁在前谁在后。所以要把位置信息注入进去：</p>
+<ul>
+<li>早期：正弦函数编码</li>
+<li>现在主流：RoPE（旋转位置编码），把位置写成向量的旋转角度，天然支持外推</li>
+</ul>
+<h3>5. 一个 Transformer 块的完整结构</h3>
+<pre>
+输入 x
+ ├─→ LayerNorm → 多头注意力 → 残差相加
+ └─→ LayerNorm → 前馈网络(FFN) → 残差相加
+</pre>
+<ul>
+<li><strong>残差连接</strong>：让梯度能走捷径回传，深网络才训得动</li>
+<li><strong>LayerNorm</strong>：稳定每层输入分布</li>
+<li><strong>FFN</strong>：两层全连接 + 激活，参数量通常占整个模型的三分之二，负责"知识存储"</li>
+</ul>
+<h3>6. 因果掩码：为什么它只能往前看</h3>
+<p>GPT 类模型训练目标是"预测下一个词"，所以第 5 个位置不能偷看第 6 个词。做法是把上三角的注意力分数设成 $-\infty$，softmax 后权重归零。</p>
+<p>这就是 <strong>decoder-only</strong> 架构——今天几乎所有大模型都是这个。</p>
+<h3>7. 代价：$O(n^2)$</h3>
+<p>序列长度翻倍，注意力计算量翻四倍。这就是长上下文贵的根本原因，也是各种稀疏注意力、线性注意力想解决的问题。</p>
+<p>（注意：KV cache 让推理时的计算量线性增长，但显存占用仍随长度线性上涨，见&lt;a href="#ch6"&gt;05-推理与部署&lt;/a&gt;。）</p>
+<h3>一句话总结</h3>
+<p>Transformer = 用"查询—匹配—取值"的机制，让每个词按需从全句取信息，再用残差和归一化把它堆深。</p>
+<h3>自测</h3>
+<ul>
+<li>1. Q、K、V 分别对应会议类比里的什么？为什么不能共用一套权重？</li>
+<li>2. 为什么除以 $\sqrt{d}$？不除会怎样？</li>
+<li>3. 因果掩码加在哪一步？如果去掉，训练目标会变成什么？</li>
+<li>4. FFN 里存的是什么？</li>
+</ul>
+<h3>相关</h3>
+<ul>
+<li>上一站：&lt;a href="#ch3"&gt;02-神经网络与训练&lt;/a&gt;</li>
+<li>下一站：&lt;a href="#ch5"&gt;04-大模型训练三阶段&lt;/a&gt;</li>
+</ul>
+<hr/>
+<p>&lt;span class="wiki"&gt;&amp;lt; 返回学习索引&lt;/span&gt;</p>
+</section>
+<section id="ch5" data-title="大模型训练三阶段"><h1>5. 大模型训练三阶段</h1>
+<blockquote>一个"能聊天的模型"要过三道工序。搞清楚这三步，很多现象自然就解释了。</blockquote>
+<h3>阶段一：预训练（Pre-training）</h3>
+<p><strong>任务极其简单</strong>：给前文，预测下一个 token。整个互联网的文本都拿来做这道题。</p>
+<ul>
+<li>损失函数：交叉熵</li>
+<li>数据量：几万亿 token</li>
+<li>算力：几千张 GPU 跑几个月</li>
+<li>产出：一个<strong>基座模型</strong>（base model），它只会"接话"，不会"听话"</li>
+</ul>
+<p><strong>关键规律——缩放定律（Scaling Law）</strong>：模型参数、数据量、算力三者按比例增长时，损失可预测地下降。这解释了为什么大家拼命堆规模。</p>
+<p><strong>Chinchilla 修正</strong>：给定算力预算，参数量和训练 token 数应大致同比例增长（约 20 token/参数）。早期模型普遍"参数太大、数据太少"。</p>
+<h3>阶段二：监督微调（SFT）</h3>
+<p>基座模型看到"请帮我写一封邮件"时，可能续写出十几封邮件——因为它在模仿互联网文本，不是在回答问题。</p>
+<p>SFT 用<strong>人工写好的问答对</strong>教它"看到指令要回答"：</p>
+<pre>
+用户：把这句话翻译成英文：今天天气不错
+助手：The weather is nice today.
+</pre>
+<ul>
+<li>数据量小得多：几万到几百万条</li>
+<li>教会的是<strong>格式和角色</strong>，不是新知识</li>
+<li>这一步之后，模型才"可用"</li>
+</ul>
+<h3>阶段三：对齐（RLHF / DPO）</h3>
+<p>同一个问题，模型能给出好几种回答。哪种更好？这需要<strong>人类偏好</strong>。</p>
+<p><strong>RLHF</strong>：让人给回答排序 → 训一个奖励模型 → 用强化学习让模型追求高奖励。</p>
+<p><strong>DPO</strong>：跳过奖励模型，直接用"好回答 vs 差回答"的成对数据优化，更简单稳定，现在更流行。</p>
+<p>对齐改变的是<strong>倾向</strong>，不是能力：更少有害输出、更愿意承认不知道、更符合指令风格。</p>
+<h3>幻觉是从哪来的</h3>
+<p>本质：模型优化的是"<strong>像不像人话</strong>"，不是"<strong>对不对</strong>"。</p>
+<ul>
+<li>1. 预训练目标只奖励"下一个词概率高"，不奖励"事实正确"</li>
+<li>2. 训练数据里错误信息、过时信息都会被学进去</li>
+<li>3. 采样带随机性，模型会在不确定时"顺滑地编"</li>
+</ul>
+<p>所以幻觉不是 bug，是<strong>目标的必然副作用</strong>。RAG、工具调用、要求引用来源，都是在外部补上"事实校验"这一环（见&lt;a href="#ch7"&gt;06-应用层-RAG与Agent&lt;/a&gt;）。</p>
+<h3>三个阶段的对比</h3>
+<table><thead><tr>
+<th></th>
+<th>预训练</th>
+<th>SFT</th>
+<th>对齐</th>
+</tr></thead><tbody>
+<tr>
+<td>数据</td>
+<td>万亿 token 网页</td>
+<td>万级问答对</td>
+<td>万级偏好对</td>
+</tr>
+<tr>
+<td>目标</td>
+<td>预测下一个词</td>
+<td>模仿示范回答</td>
+<td>符合人类偏好</td>
+</tr>
+<tr>
+<td>得到</td>
+<td>会接话</td>
+<td>会听话</td>
+<td>会分寸</td>
+</tr>
+<tr>
+<td>成本</td>
+<td>极高</td>
+<td>中</td>
+<td>中</td>
+</tr>
+</tbody></table>
+<h3>一句话总结</h3>
+<p>预训练给它"世界的知识"，SFT 给它"回答的格式"，对齐给它"做人的分寸"。三者叠加，才有你看到的那个助手。</p>
+<h3>自测</h3>
+<ul>
+<li>1. 为什么基座模型不能直接当聊天助手用？</li>
+<li>2. 幻觉能不能靠"再训练一次"彻底消除？为什么？</li>
+<li>3. DPO 相比 RLHF 省掉了什么？</li>
+<li>4. 微调能让模型学会一门全新的、训练数据里没有的知识吗？</li>
+</ul>
+<h3>相关</h3>
+<ul>
+<li>上一站：&lt;a href="#ch4"&gt;03-Transformer&lt;/a&gt;</li>
+<li>下一站：&lt;a href="#ch6"&gt;05-推理与部署&lt;/a&gt;</li>
+</ul>
+<hr/>
+<p>&lt;span class="wiki"&gt;&amp;lt; 返回学习索引&lt;/span&gt;</p>
+</section>
+<section id="ch6" data-title="推理与部署"><h1>6. 推理与部署</h1>
+<blockquote>训练完的模型是一堆数字文件。要让它开口说话，中间还有一整套工程。</blockquote>
+<h3>1. 生成是"一个字一个字挤出来"的</h3>
+<p>模型每次只做一件事：给已有序列，算出下一个 token 的概率分布。然后选一个词接上去，再算下一个。</p>
+<p>这叫<strong>自回归生成</strong>。所以输出 500 字，模型内部其实跑了 500 次前向。</p>
+<h3>2. 采样策略：怎么从概率里挑词</h3>
+<table><thead><tr>
+<th>策略</th>
+<th>做法</th>
+<th>效果</th>
+</tr></thead><tbody>
+<tr>
+<td>贪心</td>
+<td>每次取概率最高的</td>
+<td>稳定但死板、易重复</td>
+</tr>
+<tr>
+<td>温度 T</td>
+<td>概率除以 T 再归一化</td>
+<td>T→0 接近贪心；T&gt;1 更发散</td>
+</tr>
+<tr>
+<td>Top-k</td>
+<td>只在概率前 k 个里选</td>
+<td>砍掉长尾胡话</td>
+</tr>
+<tr>
+<td>Top-p（核采样）</td>
+<td>累积概率到 p 就截断</td>
+<td>自适应候选数量，最常用</td>
+</tr>
+</tbody></table>
+<p><strong>temperature 改的不是"聪明程度"</strong>，是"愿不愿意冒险"。写代码要 T=0，写诗可以 T=1.2。</p>
+<h3>3. KV Cache：为什么第二次比第一次快</h3>
+<p>生成第 N 个词时，前面 N-1 个词的 K、V 其实没变。把它们缓存下来，就不用重算。</p>
+<ul>
+<li>没缓存：每生成一个词，重算整段 → 平方级</li>
+<li>有缓存：只算新词 → 线性级</li>
+</ul>
+<p>代价是<strong>显存</strong>：缓存大小 ≈ 层数 × 2 × 头数 × 头维度 × 序列长度 × 精度字节数。</p>
+<h3>4. 显存怎么估（重要，能手算）</h3>
+<p>推理显存 ≈ <strong>权重 + KV cache + 激活值</strong></p>
+<ul>
+<li>权重：7B 参数，FP16 约 14 GB；INT8 约 7 GB；INT4 约 3.5 GB</li>
+<li>粗略口诀：<strong>参数量(B) × 精度字节数(GB)</strong></li>
+<li>所以 7B 想跑在 8 GB 显卡上，必须量化到 4 bit</li>
+</ul>
+<h3>5. 量化：用精度换显存</h3>
+<p>把 16 位浮点压成 8 位甚至 4 位整数，体积砍一半到四分之三，速度通常也变快，代价是轻微质量下降。</p>
+<ul>
+<li><strong>训练后量化（PTQ）</strong>：直接压已训好的模型，简单</li>
+<li><strong>量化感知训练（QAT）</strong>：训练时就模拟量化误差，质量更好但贵</li>
+</ul>
+<p>经验：4 bit 对日常对话几乎无损，对数学和代码任务损失明显。</p>
+<h3>6. Prefill 与 Decode：两段截然不同的负载</h3>
+<ul>
+<li><strong>Prefill</strong>：把整段输入一次性算完 → 吃算力，并行度高</li>
+<li><strong>Decode</strong>：逐个吐词 → 吃显存带宽，GPU 利用率低</li>
+</ul>
+<p>这解释了为什么"输入很长"和"输出很长"的体验差异，也解释了批处理（batching）为什么能显著提升吞吐：把多个请求的 decode 拼在一起做。</p>
+<h3>7. 部署形态</h3>
+<table><thead><tr>
+<th>形态</th>
+<th>场景</th>
+<th>代表</th>
+</tr></thead><tbody>
+<tr>
+<td>云端 API</td>
+<td>无硬件、要弹性</td>
+<td>各类厂商 API</td>
+</tr>
+<tr>
+<td>本地量化</td>
+<td>隐私、离线</td>
+<td>llama.cpp、Ollama</td>
+</tr>
+<tr>
+<td>自托管推理</td>
+<td>高并发、可控成本</td>
+<td>vLLM、SGLang、TensorRT-LLM</td>
+</tr>
+</tbody></table>
+<h3>一句话总结</h3>
+<p>推理就是"一次次预测下一个词"，所有优化都在做两件事：<strong>少算一点（缓存/量化）、多算一点（批处理/并行）</strong>。</p>
+<h3>自测</h3>
+<ul>
+<li>1. temperature=0 是不是完全确定？为什么现实中仍有细微差异？</li>
+<li>2. 一个 13B 模型用 INT4 跑，权重大约占多少显存？还能留多少给 KV cache？</li>
+<li>3. 为什么长上下文对显存压力是指数级的（提示：注意力 + KV cache 各贡献什么）？</li>
+</ul>
+<h3>相关</h3>
+<ul>
+<li>上一站：&lt;a href="#ch5"&gt;04-大模型训练三阶段&lt;/a&gt;</li>
+<li>下一站：&lt;a href="#ch7"&gt;06-应用层-RAG与Agent&lt;/a&gt;</li>
+</ul>
+<hr/>
+<p>&lt;span class="wiki"&gt;&amp;lt; 返回学习索引&lt;/span&gt;</p>
+</section>
+<section id="ch7" data-title="应用层-RAG与Agent"><h1>7. 应用层-RAG与Agent</h1>
+<blockquote>前面五篇在讲"模型是什么"，这篇讲"拿它做事"。绝大多数产品价值都落在这里。</blockquote>
+<h3>1. 提示词不是玄学</h3>
+<p>模型没有记忆，它只看到你这次给的全部文本。所谓 prompt 工程，本质是<strong>在有限的上下文里把任务说清楚</strong>。</p>
+<p>一个可用的结构：</p>
+<pre>
+角色 / 背景
+任务（一句话）
+约束（不能做什么、必须做什么）
+输入数据
+输出格式
+</pre>
+<p><strong>最有效的三个改进</strong>：给例子（few-shot）、要求分步思考、指定输出格式。剩下都是微调。</p>
+<h3>2. RAG：把知识放到模型眼前</h3>
+<p>模型的参数里存的是"训练时截止的世界"。要它回答<strong>私有数据</strong>或<strong>最新信息</strong>，最实用的办法是把资料检索出来，塞进 prompt。</p>
+<p>流程：</p>
+<pre>
+文档 → 切块(chunk) → 向量化(embedding) → 存向量库
+问题 → 向量化 → 检索 top-k → 拼进 prompt → 模型作答
+</pre>
+<p><strong>为什么能缓解幻觉</strong>：答案有了出处，模型从"回忆"变成"阅读理解"。再加一句"只依据给定资料回答"，效果更明显。</p>
+<p><strong>最容易翻车的三个点</strong>：</p>
+<ul>
+<li>1. <strong>切块</strong>：切太碎丢上下文，切太大噪声多。按语义切，别按固定字数硬切</li>
+<li>2. <strong>检索</strong>：纯向量检索对精确关键词（型号、人名）不灵，要混合关键词检索</li>
+<li>3. <strong>重排（rerank）</strong>：先粗召回 50 条，再用小模型精排到 5 条，质量提升最明显</li>
+</ul>
+<h3>3. Agent：让模型自己决定下一步</h3>
+<p>普通调用是"一问一答"。Agent 是让模型<strong>在循环里自己选工具、看结果、再决定</strong>。</p>
+<pre>
+while 未完成:
+    模型输出：我要调用哪个工具、参数是什么
+    系统执行工具，把结果回填
+    模型基于新结果继续推理
+</pre>
+<p>这就是 <strong>ReAct</strong>（Reason + Act）模式。它把模型从"生成器"变成"决策器"。</p>
+<p><strong>能力边界</strong>：模型只能做它见过的工具签名内的事。工具设计得越清晰（名字、参数、返回值语义明确），Agent 越可靠。</p>
+<p><strong>常见失败模式</strong>：</p>
+<ul>
+<li>死循环：反复调同一个工具 → 加步数上限</li>
+<li>幻觉工具：编造不存在的参数 → 参数校验</li>
+<li>上下文爆炸：每轮工具结果都进上下文 → 只回填摘要</li>
+</ul>
+<h3>4. 记忆与上下文管理</h3>
+<p>三个层次：</p>
+<ul>
+<li><strong>短期</strong>：当前对话窗口，满了就丢</li>
+<li><strong>长期</strong>：向量库 / 数据库，按需检索</li>
+<li><strong>工作记忆</strong>：压缩后的任务状态摘要</li>
+</ul>
+<p>实操里最有效的不是"更大的窗口"，而是<strong>主动摘要 + 关键信息结构化存储</strong>。</p>
+<h3>5. 怎么评估</h3>
+<p>没有评估就没有优化。三层：</p>
+<table><thead><tr>
+<th>层次</th>
+<th>做法</th>
+<th>成本</th>
+</tr></thead><tbody>
+<tr>
+<td>离线集</td>
+<td>准备 50–200 条真实问题 + 标准答案</td>
+<td>低，必做</td>
+</tr>
+<tr>
+<td>人工抽检</td>
+<td>每周抽 20 条看质量</td>
+<td>中</td>
+</tr>
+<tr>
+<td>LLM 打分</td>
+<td>用另一个模型按维度打分</td>
+<td>低但有偏差</td>
+</tr>
+</tbody></table>
+<p><strong>关键</strong>：先把"什么算好"写成评分标准，再谈优化。否则永远在凭感觉改 prompt。</p>
+<h3>一句话总结</h3>
+<p>RAG 解决"不知道"，Agent 解决"不会做"，评估解决"不知道有没有变好"。</p>
+<h3>自测</h3>
+<ul>
+<li>1. 什么情况下 RAG 反而不如直接微调？</li>
+<li>2. Agent 循环里，为什么工具返回结果要做摘要而不是全塞回去？</li>
+<li>3. 你的 RAG 答错了，怎么判断是检索错还是生成错？</li>
+</ul>
+<h3>相关</h3>
+<ul>
+<li>上一站：&lt;a href="#ch6"&gt;05-推理与部署&lt;/a&gt;</li>
+<li>配套：&lt;a href="#ch8"&gt;07-8周路线图&lt;/a&gt;</li>
+</ul>
+<hr/>
+<p>&lt;span class="wiki"&gt;&amp;lt; 返回学习索引&lt;/span&gt;</p>
+</section>
+<section id="ch8" data-title="8周路线图"><h1>8. 8周路线图</h1>
+<blockquote>前提：<strong>没有编程基础</strong>。所以全程不写代码，靠图解、类比、手算和现成的可视化工具。</blockquote>
+<blockquote>每天 30–45 分钟，8 周。目标是"讲得明白"，不是"做得出来"。</blockquote>
+<h3>先想清楚：不写代码能学到哪一层</h3>
+<p>能学到：模型<strong>怎么想</strong>、为什么这么设计、哪里会出错、什么场景该用什么方案。</p>
+<p>学不到：自己训练模型、自己写推理服务。</p>
+<p>但说实话——<strong>90% 的实际判断力在前者</strong>。你能不能判断"这个需求该用 RAG 还是微调"，跟你会不会写 Python 没关系。</p>
+<h3>八周安排</h3>
+<p><strong>第 1 周｜先建立整体地图</strong></p>
+<p>读 &lt;a href="#ch1"&gt;00-索引&lt;/a&gt; 和本篇；看 3Blue1Brown 神经网络系列第 1 集。<strong>任务</strong>：用自己的话写下"大模型在做什么"，三句话以内。</p>
+<p><strong>第 2 周｜梯度与损失（只求直觉）</strong></p>
+<p>读 &lt;a href="#ch2"&gt;01-数学直觉&lt;/a&gt;。跳过所有公式推导，只记住两个比喻：下山、调音台。<strong>任务</strong>：向家人解释"模型怎么越学越准"。</p>
+<p><strong>第 3 周｜神经网络</strong></p>
+<p>读 &lt;a href="#ch3"&gt;02-神经网络与训练&lt;/a&gt;。重点看"为什么必须有激活函数""反向传播是分摊责任"。<strong>任务</strong>：画一张图，标出数据从输入到输出的流向。</p>
+<p><strong>第 4 周｜注意力（核心周）</strong></p>
+<p>读 &lt;a href="#ch4"&gt;03-Transformer&lt;/a&gt; 前三节；去 &lt;a href="https://poloclub.github.io/transformer-explainer/"&gt;Transformer Explainer&lt;/a&gt; 亲手改输入，看注意力权重怎么变。<strong>任务</strong>：用"开会"这个比喻讲清 Q/K/V。</p>
+<p><strong>第 5 周｜完整 Transformer</strong></p>
+<p>读 &lt;a href="#ch4"&gt;03-Transformer&lt;/a&gt; 后半；去 &lt;a href="https://bbycroft.net/llm"&gt;LLM 可视化&lt;/a&gt; 拖动看一层层计算。<strong>任务</strong>：讲清"为什么模型只能往前看"。</p>
+<p><strong>第 6 周｜训练三阶段与幻觉</strong></p>
+<p>读 &lt;a href="#ch5"&gt;04-大模型训练三阶段&lt;/a&gt;。<strong>任务</strong>：写 300 字回答"AI 为什么会一本正经地胡说"。</p>
+<p><strong>第 7 周｜推理与成本</strong></p>
+<p>读 &lt;a href="#ch6"&gt;05-推理与部署&lt;/a&gt;。跳过 KV cache 的公式，只记结论：显存 ≈ 参数量 × 精度。<strong>任务</strong>：算一次"7B 模型 4bit 量化要多少显存"。</p>
+<p><strong>第 8 周｜应用层与复盘</strong></p>
+<p>读 &lt;a href="#ch7"&gt;06-应用层-RAG与Agent&lt;/a&gt;。<strong>任务</strong>：给你自己的工作或兴趣，设计一个"该用 RAG 还是该微调"的判断，写成一页。</p>
+<h3>里程碑检验（每两周一次）</h3>
+<ul>
+<li>第 2 周：能用比喻讲清"训练"</li>
+<li>第 4 周：能讲清"注意力"，不用"注意力"三个字</li>
+<li>第 6 周：能说清幻觉的成因和缓解手段</li>
+<li>第 8 周：能对一个新需求给出技术选型判断</li>
+</ul>
+<p><strong>检验方式</strong>：讲给一个完全不懂的人听，他听懂了就算过。</p>
+<h3>不需要写代码的动手方式</h3>
+<table><thead><tr>
+<th>想体验什么</th>
+<th>用什么</th>
+<th>要装东西吗</th>
+</tr></thead><tbody>
+<tr>
+<td>文字怎么被切碎</td>
+<td>&lt;a href="https://tiktokenizer.vercel.app/"&gt;tiktokenizer&lt;/a&gt;</td>
+<td>不用，网页</td>
+</tr>
+<tr>
+<td>注意力在看哪</td>
+<td>&lt;a href="https://poloclub.github.io/transformer-explainer/"&gt;Transformer Explainer&lt;/a&gt;</td>
+<td>不用，网页</td>
+</tr>
+<tr>
+<td>整个模型怎么算</td>
+<td>&lt;a href="https://bbycroft.net/llm"&gt;LLM Visualization&lt;/a&gt;</td>
+<td>不用，网页</td>
+</tr>
+<tr>
+<td>本地跑个模型</td>
+<td>任意桌面 AI 客户端</td>
+<td>要装，但只点鼠标</td>
+</tr>
+<tr>
+<td>显存够不够</td>
+<td>纸笔 + 计算器</td>
+<td>不用</td>
+</tr>
+</tbody></table>
+<h3>可选支线：以后想补编程</h3>
+<p>如果学到第 8 周觉得"我想自己动手做"，再考虑。顺序是：</p>
+<ul>
+<li>1. <strong>Python 基础</strong>（4–6 周）——变量、循环、函数、读写文件，够用就行</li>
+<li>2. <strong>numpy 和 pandas</strong>（2 周）——会算数组</li>
+<li>3. <strong>调 API</strong>（1 周）——比自己训模型有用一百倍</li>
+<li>4. 到这一步再回看 &lt;a href="#ch4"&gt;03-Transformer&lt;/a&gt;，会发现突然看得懂了</li>
+</ul>
+<p><strong>不建议</strong>一上来就学编程再学 AI：两条线同时卡，容易放弃。先把"是什么"搞明白，编程只是"怎么做"的工具。</p>
+<h3>卡住了怎么办</h3>
+<ul>
+<li>1. 公式看不懂 → 直接跳过，看类比和结论</li>
+<li>2. 视频看不下去 → 换成中文讲解的（见 &lt;a href="#ch9"&gt;08-资源清单&lt;/a&gt;）</li>
+<li>3. 觉得抽象 → 去玩上面那几个可视化工具，比读十遍管用</li>
+<li>4. 完全没动力 → 回到第 1 周那句话，重写一遍</li>
+</ul>
+<h3>相关</h3>
+<ul>
+<li>返回：&lt;a href="#ch1"&gt;00-索引&lt;/a&gt;</li>
+<li>资源：&lt;a href="#ch9"&gt;08-资源清单&lt;/a&gt;</li>
+</ul>
+<hr/>
+<p>&lt;span class="wiki"&gt;&amp;lt; 返回学习索引&lt;/span&gt;</p>
+</section>
+<section id="ch9" data-title="资源清单"><h1>9. 资源清单</h1>
+<blockquote>已按"<strong>要不要会编程</strong>"分开。没基础的话，只看第一、二部分，第三部分留着以后。</blockquote>
+<h3>一、不用写代码，先看这些</h3>
+<p><strong>可视化工具（强烈推荐，比视频更直观）</strong></p>
+<ul>
+<li><strong>Transformer Explainer</strong> — 改输入，实时看注意力权重怎么分配</li>
+</ul>
+<p>https://poloclub.github.io/transformer-explainer/</p>
+<ul>
+<li><strong>LLM Visualization</strong> — 3D 展示一个 GPT 每一层的计算</li>
+</ul>
+<p>https://bbycroft.net/llm</p>
+<ul>
+<li><strong>tiktokenizer</strong> — 看一句话被切成哪些 token</li>
+</ul>
+<p>https://tiktokenizer.vercel.app/</p>
+<p><strong>视频（中文优先）</strong></p>
+<ul>
+<li><strong>3Blue1Brown 神经网络系列</strong> — 动画讲梯度下降和反向传播，最好的入门</li>
+</ul>
+<p>https://www.3blue1brown.com/topics/neural-networks</p>
+<ul>
+<li><strong>李宏毅 · 机器学习课程</strong> — 中文，讲得活，适合当主课</li>
+</ul>
+<p>https://speech.ee.ntu.edu.tw/~hylee/ml/2023-spring.php</p>
+<ul>
+<li><strong>李沐 · 论文精读（B 站）</strong> — 中文讲 Transformer 原论文，当第二遍看</li>
+</ul>
+<p><strong>文章（先读图解版）</strong></p>
+<ul>
+<li><strong>The Illustrated Transformer</strong> — 把论文画成图，先看这个再看原文</li>
+</ul>
+<p>https://jalammar.github.io/illustrated-transformer/</p>
+<h3>二、不写代码也能读懂的论文</h3>
+<p>按顺序，别一上来啃原文：</p>
+<ul>
+<li>1. <strong>Attention Is All You Need</strong>（2017）— 只看摘要、图 1、结论</li>
+</ul>
+<p>https://arxiv.org/abs/1706.03762</p>
+<ul>
+<li>2. <strong>GPT-3</strong>（2020）— 看"规模变大后能力变强"这个结论</li>
+</ul>
+<p>https://arxiv.org/abs/2005.14165</p>
+<ul>
+<li>3. <strong>InstructGPT</strong>（2022）— 看人类偏好怎么教模型"好好说话"</li>
+</ul>
+<p>https://arxiv.org/abs/2203.02155</p>
+<h3>三、需要编程的（以后再说）</h3>
+<ul>
+<li><strong>《动手学深度学习》</strong>（李沐，中文免费）https://zh.d2l.ai/</li>
+<li><strong>nanoGPT</strong> — 300 行看懂 GPT https://github.com/karpathy/nanoGPT</li>
+<li><strong>Karpathy · Zero to Hero</strong> — 从零手写 GPT https://karpathy.ai/zero-to-hero.html</li>
+<li><strong>Ollama</strong> — 本地跑模型 https://ollama.com/</li>
+<li><strong>llama.cpp</strong> — 本地量化推理 https://github.com/ggml-org/llama.cpp</li>
+</ul>
+<h3>四、选书建议</h3>
+<ul>
+<li><strong>《深度学习》花书</strong> — 别从头读，当字典查</li>
+<li><strong>《这就是 ChatGPT》</strong>（Stephen Wolfram）— 没有编程基础也能读，讲得极清楚</li>
+<li>中文科普向：优先看<strong>李宏毅</strong>和<strong>李沐</strong>的免费课，比买书划算</li>
+</ul>
+<h3>怎么用这份清单</h3>
+<ul>
+<li>每周只挑<strong>一个</strong>主资源，别贪</li>
+<li>视频 1.5 倍速，看不懂就退回 0.75</li>
+<li>看完回本目录写三句话，写不出就是没看进去</li>
+<li>第三部分先别碰，等第 8 周之后再决定</li>
+</ul>
+<h3>相关</h3>
+<ul>
+<li>返回：&lt;a href="#ch1"&gt;00-索引&lt;/a&gt;</li>
+<li>配套：&lt;a href="#ch8"&gt;07-8周路线图&lt;/a&gt;</li>
+</ul>
+<hr/>
+<p>&lt;span class="wiki"&gt;&amp;lt; 返回学习索引&lt;/span&gt;</p>
+</section>
+</main>
+<button class="fab" id="fab" title="朗读">▶</button>
+<script>
+document.getElementById('fab').onclick = toggle;
+
+var sections = Array.prototype.slice.call(document.querySelectorAll('section'));
+var toc = document.getElementById('toc');
+var meta = document.getElementById('meta');
+var playBtn = document.getElementById('play');
+var rateSel = document.getElementById('rate');
+var synth = window.speechSynthesis;
+var voice = null, idx = 0, pos = 0, playing = false, blocks = [], curBlock = null;
+
+function pickVoice(){
+  var vs = synth.getVoices() || [];
+  voice = vs.filter(function(v){return /zh|cmn/i.test(v.lang+v.name);})[0] || null;
+}
+if (synth) { pickVoice(); synth.onvoiceschanged = pickVoice; }
+
+function show(i){
+  i = Math.max(0, Math.min(sections.length-1, i));
+  idx = i; pos = 0;
+  sections.forEach(function(s,k){ s.classList.toggle('on', k===i); });
+  blocks = Array.prototype.slice.call(sections[i].querySelectorAll('p,li,h2,h3,h4,blockquote,td'));
+  meta.textContent = '第 ' + (i+1) + ' / ' + sections.length + ' 章 · ' + sections[i].dataset.title;
+  window.scrollTo(0,0);
+  try { localStorage.setItem('ai-ch', i); } catch(e){}
+}
+
+function clearHL(){ if(curBlock){ curBlock.classList.remove('speaking'); curBlock = null; } }
+
+function speakAt(k){
+  if (!synth) return;
+  if (k >= blocks.length){ next(); return; }
+  pos = k;
+  var el = blocks[k];
+  var text = (el.textContent || '').trim();
+  if (text.length < 2){ speakAt(k+1); return; }
+  clearHL();
+  el.classList.add('speaking'); curBlock = el;
+  var u = new SpeechSynthesisUtterance(text);
+  u.lang = 'zh-CN';
+  if (voice) u.voice = voice;
+  u.rate = parseFloat(rateSel.value) || 1;
+  u.onend = function(){ if (playing) speakAt(k+1); };
+  u.onerror = function(){ if (playing) setTimeout(function(){ speakAt(k+1); }, 60); };
+  synth.speak(u);
+  var r = el.getBoundingClientRect();
+  if (r.top < 90 || r.bottom > window.innerHeight - 60){
+    el.scrollIntoView({block:'center', behavior:'smooth'});
+  }
+}
+
+function play(){
+  if (!synth) { alert('这个浏览器不支持语音朗读，请用 Safari 或 Chrome 打开。'); return; }
+  if (!blocks.length) blocks = Array.prototype.slice.call(sections[idx].querySelectorAll('p,li,h2,h3,h4,blockquote,td'));
+  playing = true; playBtn.textContent = '暂停';
+  if (synth.paused) { synth.resume(); return; }
+  speakAt(pos);
+}
+function pause(){ playing = false; playBtn.textContent = '朗读'; synth.pause(); }
+function stop(){ playing = false; playBtn.textContent = '朗读'; synth.cancel(); clearHL(); }
+function toggle(){ playing ? pause() : play(); }
+
+function next(){ stop(); if (idx < sections.length-1) show(idx+1); }
+function prev(){ stop(); show(idx-1); }
+
+playBtn.onclick = toggle;
+document.getElementById('next').onclick = next;
+document.getElementById('prev').onclick = prev;
+document.getElementById('tocbtn').onclick = function(){
+  toc.classList.toggle('on');
+  if (!toc.dataset.done){
+    sections.forEach(function(s,i){
+      var a = document.createElement('a');
+      a.textContent = (i+1) + '. ' + s.dataset.title;
+      a.onclick = function(){ toc.classList.remove('on'); stop(); show(i); };
+      toc.appendChild(a);
+    });
+    toc.dataset.done = '1';
+  }
+};
+rateSel.onchange = function(){
+  try { localStorage.setItem('ai-rate', rateSel.value); } catch(e){}
+  if (playing){ var p = pos; stop(); play(); }
+};
+// 点段落从那里开始听
+document.addEventListener('click', function(ev){
+  var el = ev.target;
+  if (el.tagName === 'A' || el.closest('a') || el.closest('header') || el.closest('.toc')) return;
+  if (el.tagName === 'BUTTON' || el.tagName === 'SELECT') return;
+  var b = el.closest('p,li,blockquote,td,h2,h3');
+  if (!b) return;
+  var k = blocks.indexOf(b);
+  if (k < 0) return;
+  if (!synth) return;
+  synth.cancel(); clearHL();
+  playing = true; playBtn.textContent = '暂停';
+  pos = k; speakAt(k);
+});
+
+var savedCh = 0, savedRate = '1';
+try { savedCh = parseInt(localStorage.getItem('ai-ch') || '0', 10) || 0;
+      savedRate = localStorage.getItem('ai-rate') || '1'; } catch(e){}
+rateSel.value = savedRate;
+show(savedCh);
+
+</script>
+</body>
+</html>
